@@ -1,0 +1,15 @@
+# Go build artifacts
+/coldsign
+*.exe
+*.out
+
+# Go tooling
+/go.sum
+
+# Editor noise
+.vscode/
+.idea/
+*.swp
+
+# OS junk
+.DS_Store
