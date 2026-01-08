@@ -18,6 +18,7 @@ type EthSendIntent struct {
 	Kind                    string  `json:"kind"` // must be "ETH_SEND"
 	ChainID                 uint64  `json:"chainId"`
 	From                    FromRef `json:"from"`
+	FromAddress             string  `json:"fromAddress"` // expected derived address (0x...), required for safety
 	To                      string  `json:"to"`
 	ValueWei                string  `json:"valueWei"`
 	Nonce                   uint64  `json:"nonce"`
@@ -68,6 +69,13 @@ func (in *EthSendIntent) Validate() error {
 	if to == (common.Address{}) {
 		return fmt.Errorf("to address must not be zero address")
 	}
+	if in.FromAddress == "" {
+    return fmt.Errorf("fromAddress is required")
+	}
+	if !common.IsHexAddress(in.FromAddress) {
+			return fmt.Errorf("invalid fromAddress: %s", in.FromAddress)
+	}
+
 
 	// Numeric checks
 	if _, err := parseUintDecimal(in.ValueWei); err != nil {

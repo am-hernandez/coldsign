@@ -6,6 +6,10 @@ import (
 
 	"coldsign/intent"
 	"coldsign/policy"
+	"coldsign/hd"
+  "strings"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
@@ -44,4 +48,27 @@ func main() {
 	}
 
 	fmt.Println("Policy check: OK")
+
+	mn := strings.TrimSpace(os.Getenv("COLD_MNEMONIC"))
+	if mn == "" {
+		fmt.Println("error: set COLD_MNEMONIC (BIP-39 mnemonic) in environment")
+		os.Exit(1)
+	}
+	pass := os.Getenv("COLD_PASSPHRASE") // optional
+
+	_, derivedAddr, err := hd.DeriveEthKey(mn, pass, in.From.Index)
+	if err != nil {
+		fmt.Println("hd derive error:", err)
+		os.Exit(1)
+	}
+
+	if derivedAddr.Hex() != common.HexToAddress(in.FromAddress).Hex() {
+		fmt.Println("error: derived fromAddress does not match intent")
+		fmt.Println("derived:", derivedAddr.Hex())
+		fmt.Println("intent: ", common.HexToAddress(in.FromAddress).Hex())
+		os.Exit(1)
+	}
+
+	fmt.Println("From address verified:", derivedAddr.Hex())
+
 }

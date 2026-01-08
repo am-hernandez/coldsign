@@ -3,6 +3,7 @@
   "kind": "ETH_SEND",
   "chainId": 1,
   "from": { "type": "bip44_index", "index": 0 },
+  "fromAddress": "0x116CbaE26b180a1A4fB7ECD50e6712a1d56CB8d0",
   "to": "0x1111111111111111111111111111111111111111",
   "valueWei": "10000000000000000",
   "nonce": 7,
