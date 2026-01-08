@@ -1,0 +1,11 @@
+{
+  "v": 1,
+  "kind": "ETH_SEND",
+  "chainId": 5,
+  "from": { "type": "bip44_index", "index": 0 },
+  "to": "0x1111111111111111111111111111111111111111",
+  "valueWei": "10000000000000000",
+  "nonce": 7,
+  "maxFeePerGasWei": "35000000000",
+  "maxPriorityFeePerGasWei": "1500000000"
+}

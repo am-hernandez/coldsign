@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"coldsign/intent"
+	"coldsign/policy"
 )
 
 func main() {
@@ -35,4 +36,12 @@ func main() {
 	fmt.Println("MaxFeePerGas (wei):", in.MaxFeePerGasWei)
 	fmt.Println("MaxPriorityFeePerGas (wei):", in.MaxPriorityFeePerGasWei)
 	fmt.Println("------------------------------")
+
+	p := policy.Default()
+	if err := p.Enforce(in); err != nil {
+		fmt.Println("policy violation:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Policy check: OK")
 }
