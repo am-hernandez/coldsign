@@ -8,6 +8,7 @@ import (
 	"coldsign/policy"
 	"coldsign/hd"
 	"coldsign/tx"
+	"coldsign/signer"
 
   "strings"
 
@@ -58,7 +59,7 @@ func main() {
 	}
 	pass := os.Getenv("COLD_PASSPHRASE") // optional
 
-	_, derivedAddr, err := hd.DeriveEthKey(mn, pass, in.From.Index)
+	privKey, derivedAddr, err := hd.DeriveEthKey(mn, pass, in.From.Index)
 	if err != nil {
 		fmt.Println("hd derive error:", err)
 		os.Exit(1)
@@ -81,4 +82,14 @@ func main() {
 
 	fmt.Println("Unsigned tx type:", unsignedTx.Type())
 	fmt.Println("Unsigned tx hash (pre-sign):", unsignedTx.Hash().Hex())
+
+	signed, err := signer.SignEIP1559Tx(unsignedTx, in.ChainID, privKey)
+	if err != nil {
+		fmt.Println("sign error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Signed tx hash:", signed.TxHash)
+	fmt.Println("Signed raw tx hex:", signed.RawTxHex)
+
 }
