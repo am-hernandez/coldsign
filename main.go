@@ -7,6 +7,8 @@ import (
 	"coldsign/intent"
 	"coldsign/policy"
 	"coldsign/hd"
+	"coldsign/tx"
+
   "strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -71,4 +73,12 @@ func main() {
 
 	fmt.Println("From address verified:", derivedAddr.Hex())
 
+	unsignedTx, err := tx.BuildUnsignedEthSendTx(in)
+	if err != nil {
+		fmt.Println("tx build error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Unsigned tx type:", unsignedTx.Type())
+	fmt.Println("Unsigned tx hash (pre-sign):", unsignedTx.Hash().Hex())
 }
