@@ -3,9 +3,6 @@
 *.exe
 *.out
 
-# Go tooling
-/go.sum
-
 # Editor noise
 .vscode/
 .idea/

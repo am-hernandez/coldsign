@@ -1,7 +1,35 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	"coldsign/intent"
+)
 
 func main() {
-	fmt.Println("coldsign: hello")
+	if len(os.Args) != 2 {
+		fmt.Println("usage: coldsign <intent.json>")
+		os.Exit(1)
+	}
+
+	path := os.Args[1]
+	b, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Println("read error:", err)
+		os.Exit(1)
+	}
+
+	in, err := intent.ParseEthSend(b)
+	if err != nil {
+		fmt.Println("intent error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Intent loaded successfully")
+	fmt.Println("ChainID:", in.ChainID)
+	fmt.Println("From index:", in.From.Index)
+	fmt.Println("To:", in.To)
+	fmt.Println("Value (wei):", in.ValueWei)
+	fmt.Println("Nonce:", in.Nonce)
 }
