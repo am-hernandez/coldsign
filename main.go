@@ -26,10 +26,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Intent loaded successfully")
+	fmt.Println("---- TX SUMMARY (ETH_SEND) ----")
 	fmt.Println("ChainID:", in.ChainID)
 	fmt.Println("From index:", in.From.Index)
 	fmt.Println("To:", in.To)
 	fmt.Println("Value (wei):", in.ValueWei)
 	fmt.Println("Nonce:", in.Nonce)
+	fmt.Println("MaxFeePerGas (wei):", in.MaxFeePerGasWei)
+	fmt.Println("MaxPriorityFeePerGas (wei):", in.MaxPriorityFeePerGasWei)
+	fmt.Println("------------------------------")
 }
