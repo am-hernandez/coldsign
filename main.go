@@ -1,27 +1,31 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
+	"strings"
 
+	"coldsign/hd"
 	"coldsign/intent"
 	"coldsign/policy"
-	"coldsign/hd"
-	"coldsign/tx"
+	"coldsign/qr"
 	"coldsign/signer"
-
-  "strings"
+	"coldsign/tx"
 
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("usage: coldsign <intent.json>")
+	qrFlag := flag.Bool("qr", false, "print signed raw tx as terminal QR (to stderr)")
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		fmt.Println("usage: coldsign [-qr] <intent.json>")
 		os.Exit(1)
 	}
+	path := flag.Arg(0)
 
-	path := os.Args[1]
 	b, err := os.ReadFile(path)
 	if err != nil {
 		fmt.Println("read error:", err)
@@ -92,4 +96,8 @@ func main() {
 	fmt.Println("Signed tx hash:", signed.TxHash)
 	fmt.Println("Signed raw tx hex:", signed.RawTxHex)
 
+	if *qrFlag {
+		fmt.Fprintln(os.Stderr, "\n--- SIGNED RAW TX QR (scan on online machine) ---")
+		qr.PrintToTerminal(signed.RawTxHex)
+	}
 }
