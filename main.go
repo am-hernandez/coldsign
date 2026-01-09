@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -18,21 +20,52 @@ import (
 
 func main() {
 	qrFlag := flag.Bool("qr", false, "print signed raw tx as terminal QR (to stderr)")
+	intentStdin := flag.Bool("intent-stdin", false, "read intent from stdin (JSON or coldintent:v1:<base64url>)")
 	flag.Parse()
 
-	if flag.NArg() != 1 {
-		fmt.Println("usage: coldsign [-qr] <intent.json>")
-		os.Exit(1)
-	}
-	path := flag.Arg(0)
+	var rawInput []byte
+	var err error
 
-	b, err := os.ReadFile(path)
+	if *intentStdin {
+		fmt.Fprintln(os.Stderr, "READY: waiting for intent on stdin (JSON or coldintent:v1:...)")
+		fmt.Fprintln(os.Stderr, "Tip: zbarcam --raw | coldsign --intent-stdin ...")
+
+		// Read everything from stdin (ephemeral)
+		reader := bufio.NewReader(os.Stdin)
+		line, readErr := reader.ReadString('\n')
+		if readErr != nil && readErr != io.EOF {
+			fmt.Println("stdin read error:", readErr)
+			os.Exit(1)
+		}
+		rawInput = []byte(strings.TrimSpace(line))
+		if len(rawInput) == 0 {
+			fmt.Println("stdin error: no intent provided")
+			os.Exit(1)
+		}
+
+	} else {
+		if flag.NArg() != 1 {
+			fmt.Println("usage: coldsign [-qr] [--intent-stdin] <intent.json>")
+			fmt.Println("  - for stdin mode:  zbarcam --raw | coldsign --intent-stdin")
+			os.Exit(1)
+		}
+		path := flag.Arg(0)
+		rawInput, err = os.ReadFile(path)
+		if err != nil {
+			fmt.Println("read error:", err)
+			os.Exit(1)
+		}
+	}
+
+	// Decode envelope if needed (or pass through raw JSON)
+	decodedJSON, err := intent.DecodeEnvelopeOrJSON(string(rawInput))
 	if err != nil {
-		fmt.Println("read error:", err)
+		fmt.Println("intent decode error:", err)
 		os.Exit(1)
 	}
 
-	in, err := intent.ParseEthSend(b)
+	// Parse + validate the intent JSON
+	in, err := intent.ParseEthSend(decodedJSON)
 	if err != nil {
 		fmt.Println("intent error:", err)
 		os.Exit(1)
