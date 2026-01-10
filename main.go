@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	"coldsign/helpers"
 	"coldsign/hd"
 	"coldsign/intent"
 	"coldsign/policy"
@@ -18,15 +19,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 )
-
-func shortAddr(a string) string {
-	a = strings.TrimSpace(a)
-	if len(a) <= 12 {
-		return a
-	}
-	// 0x + 6 + … + 4
-	return a[:8] + "…" + a[len(a)-4:]
-}
 
 func main() {
 	qrFlag := flag.Bool("qr", false, "print signed raw tx as terminal QR (to stderr)")
@@ -135,14 +127,29 @@ func main() {
 
 	fmt.Println("Policy check: OK")
 
-	mn := strings.TrimSpace(os.Getenv("COLD_MNEMONIC"))
-	if mn == "" {
-		fmt.Println("error: set COLD_MNEMONIC (BIP-39 mnemonic) in environment")
+	mnemonic, err := helpers.ReadHiddenLineFromTTY(
+		"ENTER MNEMONIC (space-separated BIP-39 words; input hidden)",
+		false,
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "mnemonic error:", err)
 		os.Exit(1)
 	}
-	pass := os.Getenv("COLD_PASSPHRASE") // optional
 
-	privKey, derivedAddr, err := hd.DeriveEthKey(mn, pass, in.From.Index)
+	passphrase, err := helpers.ReadHiddenLineFromTTY(
+		"ENTER PASSPHRASE (optional, press ENTER to skip; input hidden)",
+		true,
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "passphrase error:", err)
+		os.Exit(1)
+	}
+
+	privKey, derivedAddr, err := hd.DeriveEthKey(
+		mnemonic,
+		passphrase,
+		in.From.Index,
+	)
 	if err != nil {
 		fmt.Println("hd derive error:", err)
 		os.Exit(1)
@@ -214,6 +221,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "\n--- SIGNED RAW TX QR (scan on online machine) ---")
 		qr.PrintToTerminal(signed.RawTxHex)
 	}
+
+	// Best-effort memory hygiene: clear secrets AFTER signing
+	helpers.ZeroString(&mnemonic)
+	helpers.ZeroString(&passphrase)
 
 	fmt.Println("DONE: signed transaction ready for broadcast")
 }
