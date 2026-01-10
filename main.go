@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"strings"
 
@@ -18,9 +19,21 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func shortAddr(a string) string {
+	a = strings.TrimSpace(a)
+	if len(a) <= 12 {
+		return a
+	}
+	// 0x + 6 + … + 4
+	return a[:8] + "…" + a[len(a)-4:]
+}
+
 func main() {
 	qrFlag := flag.Bool("qr", false, "print signed raw tx as terminal QR (to stderr)")
 	intentStdin := flag.Bool("intent-stdin", false, "read intent from stdin (JSON or coldintent:v1:<base64url>)")
+
+	signFlag := flag.Bool("sign", false, "authorize signing (otherwise only review)")
+	yesFlag := flag.Bool("yes", false, "skip interactive confirmation (DANGEROUS)")
 	flag.Parse()
 
 	var rawInput []byte
@@ -71,15 +84,48 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("---- TX SUMMARY (ETH_SEND) ----")
-	fmt.Println("ChainID:", in.ChainID)
-	fmt.Println("From index:", in.From.Index)
-	fmt.Println("To:", in.To)
-	fmt.Println("Value (wei):", in.ValueWei)
-	fmt.Println("Nonce:", in.Nonce)
-	fmt.Println("MaxFeePerGas (wei):", in.MaxFeePerGasWei)
-	fmt.Println("MaxPriorityFeePerGas (wei):", in.MaxPriorityFeePerGasWei)
-	fmt.Println("------------------------------")
+	fmt.Println("")
+	fmt.Println("========== SIGNING REVIEW (ETH_SEND) ==========")
+	fmt.Printf("Chain:   %d\n", in.ChainID)
+	fmt.Printf("From:    %s\n", in.FromAddress)
+	fmt.Printf("To:      %s\n", in.To)
+	fmt.Printf("Nonce:   %d\n", in.Nonce)
+
+	// Amount display: ETH + wei
+	valWei, ok := new(big.Int).SetString(in.ValueWei, 10)
+	if !ok {
+		fmt.Println("intent error: invalid valueWei")
+		os.Exit(1)
+	}
+	valEth := new(big.Rat).SetFrac(valWei, big.NewInt(1e18))
+	fmt.Printf("Amount:  %s ETH  (%s wei)\n", valEth.FloatString(18), in.ValueWei)
+
+	// Fees: show gwei + wei
+	mfWei, ok := new(big.Int).SetString(in.MaxFeePerGasWei, 10)
+	if !ok {
+		fmt.Println("intent error: invalid maxFeePerGasWei")
+		os.Exit(1)
+	}
+	mpWei, ok := new(big.Int).SetString(in.MaxPriorityFeePerGasWei, 10)
+	if !ok {
+		fmt.Println("intent error: invalid maxPriorityFeePerGasWei")
+		os.Exit(1)
+	}
+
+	gwei := big.NewInt(1e9)
+	mfGwei := new(big.Rat).SetFrac(mfWei, gwei)
+	mpGwei := new(big.Rat).SetFrac(mpWei, gwei)
+
+	fmt.Printf("Fees:    max=%s gwei, tip=%s gwei\n",
+		mfGwei.FloatString(2), mpGwei.FloatString(2))
+
+	// Worst-case fee estimate for ETH send (gas=21000)
+	gas := big.NewInt(21000)
+	worstFeeWei := new(big.Int).Mul(gas, mfWei)
+	worstFeeEth := new(big.Rat).SetFrac(worstFeeWei, big.NewInt(1e18))
+	fmt.Printf("Fee cap: ~%s ETH worst-case (21000 * maxFeePerGas)\n", worstFeeEth.FloatString(6))
+
+	fmt.Println("===============================================")
 
 	p := policy.Default()
 	if err := p.Enforce(in); err != nil {
@@ -111,12 +157,47 @@ func main() {
 
 	fmt.Println("From address verified:", derivedAddr.Hex())
 
+	// Default: do not sign unless explicitly authorized
+	if !*signFlag {
+		fmt.Println("NOT SIGNED: pass --sign to authorize signing")
+		os.Exit(2)
+	}
+
+	// If authorized to sign, require interactive confirmation unless --yes flag is provided.
+	// IMPORTANT: read confirmation from /dev/tty (not stdin) so piping (zbarcam | coldsign) works.
+	if !*yesFlag {
+		tty, err := os.Open("/dev/tty")
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "no TTY available for confirmation; re-run with --yes to sign without prompt")
+			os.Exit(2)
+		}
+		defer tty.Close()
+
+		to := common.HexToAddress(in.To).Hex()
+		suffix := strings.ToLower(to[len(to)-6:])
+
+		fmt.Fprintln(os.Stderr, "")
+		fmt.Fprintln(os.Stderr, "CONFIRM SIGNING")
+		fmt.Fprintf(os.Stderr, "Type the last 6 hex chars of the TO address (...%s) and press ENTER to sign.\n", suffix)
+		fmt.Fprint(os.Stderr, "> ")
+
+		reader := bufio.NewReader(tty)
+		resp, _ := reader.ReadString('\n')
+		resp = strings.TrimSpace(strings.ToLower(resp))
+
+		if resp != suffix {
+			fmt.Fprintln(os.Stderr, "Canceled (suffix mismatch).")
+			os.Exit(0)
+		}
+	}
+
 	unsignedTx, err := tx.BuildUnsignedEthSendTx(in)
 	if err != nil {
 		fmt.Println("tx build error:", err)
 		os.Exit(1)
 	}
 
+	fmt.Println("===============================================")
 	fmt.Println("Unsigned tx type:", unsignedTx.Type())
 	fmt.Println("Unsigned tx hash (pre-sign):", unsignedTx.Hash().Hex())
 
@@ -133,4 +214,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "\n--- SIGNED RAW TX QR (scan on online machine) ---")
 		qr.PrintToTerminal(signed.RawTxHex)
 	}
+
+	fmt.Println("DONE: signed transaction ready for broadcast")
 }
