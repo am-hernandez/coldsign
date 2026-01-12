@@ -123,10 +123,12 @@ This section describes how to build coldsign on an **online build machine** and 
 
 ---
 
-## Build (online machine)
+## Installation
+
+### Build (online machine)
 
 ```sh
-git clone https://github.com/username/coldsign.git
+git clone https://github.com/am-hernandez/coldsign.git
 cd coldsign
 go build -o coldsign
 ```
@@ -139,28 +141,63 @@ Transfer the resulting `coldsign` binary to the offline machine using removable 
 
 ## Usage (offline signing machine)
 
+coldsign uses a subcommand-based interface. The main commands are:
+
+### Commands
+
+- `coldsign sign` - Review and sign transaction intents
+- `coldsign addr` - Derive and display Ethereum addresses
+- `coldsign help` - Show help message
+- `coldsign version` - Show version information
+
 ### Review-only mode (default)
+
+```sh
+./coldsign sign sample_intent.json
+```
+
+Or use backward-compatible syntax:
 
 ```sh
 ./coldsign sample_intent.json
 ```
 
+This prints a full transaction review and exits without signing.
+
 ### Sign with explicit authorization
 
 ```sh
-./coldsign --sign sample_intent.json
+./coldsign sign --sign sample_intent.json
 ```
+
+You will be shown a detailed review and asked to confirm the destination address before signing.
 
 ### Read intent from stdin (QR / pipe workflows)
 
 ```sh
-echo "coldintent:v1:..." | ./coldsign --intent-stdin --sign
+echo "coldintent:v1:..." | ./coldsign sign --intent-stdin --sign
 ```
+
+This mode is designed for camera / QR pipelines and reads a **single-line** intent from stdin.
 
 ### Render QR for air-gap transfer
 
 ```sh
-./coldsign --sign --qr sample_intent.json
+./coldsign sign --sign --qr sample_intent.json
+```
+
+This prints the signed raw transaction as a terminal QR (to stderr).
+
+### Derive and display addresses
+
+```sh
+./coldsign addr --index 0
+```
+
+Derives an Ethereum address from a BIP-39 mnemonic at the specified BIP-44 index. Optionally output as QR:
+
+```sh
+./coldsign addr --index 0 --qr
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
