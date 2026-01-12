@@ -141,7 +141,26 @@ Transfer the resulting `coldsign` binary to the offline machine using removable 
 
 ## Usage (offline signing machine)
 
-coldsign uses a subcommand-based interface. The main commands are:
+coldsign uses a subcommand-based interface. Running `coldsign help` shows:
+
+```
+░█▀▀░█▀█░█░░░█▀▄░█▀▀░▀█▀░█▀▀░█▀█
+░█░░░█░█░█░░░█░█░▀▀█░░█░░█░█░█░█
+░▀▀▀░▀▀▀░▀▀▀░▀▀░░▀▀▀░▀▀▀░▀▀▀░▀░▀
+air-gapped Ethereum transaction signer
+
+Usage:
+  coldsign sign [flags] <intent.json>
+  coldsign addr --index N [--qr]
+  coldsign help
+  coldsign version
+
+Commands:
+  sign     Review and sign transaction intents
+  addr     Derive and display Ethereum addresses
+  help     Show this help message
+  version  Show version information
+```
 
 ### Commands
 
