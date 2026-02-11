@@ -1,7 +1,9 @@
 <!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+
 <a id="readme-top"></a>
 
 <!-- PROJECT SHIELDS -->
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -25,8 +27,6 @@
   </p>
 </div>
 
-
-
 <!-- TABLE OF CONTENTS -->
 <details>
   <summary>Table of Contents</summary>
@@ -49,21 +49,33 @@
     <li>
       <a href="#usage">Usage</a>
       <ul>
-        <li><a href="#offline-machine">Offline Machine</a></li>
-        <li><a href="#online-machine">Online Machine</a></li>
-        <li><a href="#verification-tooling">Verification Tooling</a></li>
+        <li>
+          <a href="#offline-machine">Offline Machine</a>
+          <ul>
+            <li><a href="#commands">Commands</a></li>
+            <li><a href="#review-only-mode-default">Review-only mode (default)</a></li>
+            <li><a href="#sign-with-explicit-authorization">Sign with explicit authorization</a></li>
+            <li><a href="#read-intent-from-stdin-qr--pipe-workflows">Read intent from stdin (QR / pipe workflows)</a></li>
+            <li><a href="#render-qr-for-air-gap-transfer">Render QR for air-gap transfer</a></li>
+            <li><a href="#derive-and-display-addresses">Derive and display addresses</a></li>
+          </ul>
+        </li>
+        <li>
+          <a href="#online-machine">Online Machine</a>
+          <ul>
+          <li><a href="#scan-qr-code">Scan QR Code</a></li>
+          <li><a href="#manual-transfer">Manual Transfer</a></li>
+          <li><a href="#verify-transaction">Verify Transaction</a></li>
+          </ul>
+        </li>
       </ul>
     </li>
-    <li><a href="#repository-structure">Repository Structure</a></li>
     <li><a href="#security-model">Security Model</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
-    <li><a href="#contributing">Contributing</a></li>
-    <li><a href="#license">License</a></li>
     <li><a href="#status">Status</a></li>
+    <li><a href="#changelog">Changelog</a></li>
+    <li><a href="#license">License</a></li>
   </ol>
 </details>
-
-
 
 ## About The Project
 
@@ -75,7 +87,7 @@ The design is intentionally minimal, auditable, and refusal-first.
 
 ---
 
-## What coldsign does (v1)
+### What coldsign does (v1)
 
 - Parses explicit `ETH_SEND` transaction intents
 - Enforces local, refusal-first policy (chain, fees, bounds)
@@ -94,7 +106,7 @@ The design is intentionally minimal, auditable, and refusal-first.
 
 ---
 
-## What coldsign does NOT do
+### What coldsign does NOT do
 
 - No networking
 - No RPC calls
@@ -139,7 +151,9 @@ Transfer the resulting `coldsign` binary to the offline machine using removable 
 
 ---
 
-## Usage (offline signing machine)
+## Usage
+
+### Offline Machine
 
 coldsign uses a subcommand-based interface. Running `coldsign help` shows:
 
@@ -162,14 +176,14 @@ Commands:
   version  Show version information
 ```
 
-### Commands
+#### Commands
 
 - `coldsign sign` - Review and sign transaction intents
 - `coldsign addr` - Derive and display Ethereum addresses
 - `coldsign help` - Show help message
 - `coldsign version` - Show version information
 
-### Review-only mode (default)
+#### Review-only mode (default)
 
 ```sh
 ./coldsign sign sample_intent.json
@@ -183,7 +197,7 @@ Or use backward-compatible syntax:
 
 This prints a full transaction review and exits without signing.
 
-### Sign with explicit authorization
+#### Sign with explicit authorization
 
 ```sh
 ./coldsign sign --sign sample_intent.json
@@ -191,7 +205,7 @@ This prints a full transaction review and exits without signing.
 
 You will be shown a detailed review and asked to confirm the destination address before signing.
 
-### Read intent from stdin (QR / pipe workflows)
+#### Read intent from stdin (QR / pipe workflows)
 
 ```sh
 echo "coldintent:v1:..." | ./coldsign sign --intent-stdin --sign
@@ -199,7 +213,7 @@ echo "coldintent:v1:..." | ./coldsign sign --intent-stdin --sign
 
 This mode is designed for camera / QR pipelines and reads a **single-line** intent from stdin.
 
-### Render QR for air-gap transfer
+#### Render QR for air-gap transfer
 
 ```sh
 ./coldsign sign --sign --qr sample_intent.json
@@ -207,7 +221,7 @@ This mode is designed for camera / QR pipelines and reads a **single-line** inte
 
 This prints the signed raw transaction as a terminal QR (to stderr).
 
-### Derive and display addresses
+#### Derive and display addresses
 
 ```sh
 ./coldsign addr --index 0
@@ -217,6 +231,45 @@ Derives an Ethereum address from a BIP-39 mnemonic at the specified BIP-44 index
 
 ```sh
 ./coldsign addr --index 0 --qr
+```
+
+### Online Machine
+
+After signing on the offline machine, transfer the signed transaction to an online machine for broadcasting.
+
+#### Scan QR code
+
+If you used `--qr` to generate a QR code:
+
+1. **Scan the QR code** using a camera tool:
+
+   Point your camera at the QR code displayed on the offline machine's terminal. This outputs the raw signed transaction hex (`0x...`).
+
+2. **Broadcast the transaction** using any Ethereum RPC provider:
+
+   ```sh
+   # Using cast (Foundry)
+   cast publish 0xYOUR_SIGNED_TX_HEX --rpc-url https://YOUR-RPC-URL
+
+   # Or using curl
+   curl -X POST https://YOUR-RPC-URL \
+     -H "Content-Type: application/json" \
+     -d '{"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":["0xYOUR_SIGNED_TX_HEX"],"id":1}'
+   ```
+
+#### Manual Transfer
+
+If you copied the raw transaction hex manually from the offline machine:
+
+1. Copy the `Signed raw tx hex:` value from the coldsign output
+2. Broadcast it using any Ethereum RPC provider (see commands above)
+
+#### Verify Transaction
+
+After broadcasting, verify the transaction was included:
+
+```sh
+cast tx <TX_HASH> --rpc-url https://YOUR-RPC-URL
 ```
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -238,6 +291,7 @@ Derives an Ethereum address from a BIP-39 mnemonic at the specified BIP-44 index
 ---
 
 <!-- STATUS -->
+
 ## Status
 
 Experimental / educational.
@@ -246,17 +300,25 @@ Do not use with funds you cannot afford to lose.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
+<!-- CHANGELOG -->
+
+## Changelog
+
+Notable changes are documented in [CHANGELOG.md](CHANGELOG.md).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- LICENSE -->
+
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
+
 [contributors-shield]: https://img.shields.io/github/contributors/am-hernandez/coldsign.svg?style=for-the-badge
 [contributors-url]: https://github.com/am-hernandez/coldsign/graphs/contributors
 [forks-shield]: https://img.shields.io/github/forks/am-hernandez/coldsign.svg?style=for-the-badge
