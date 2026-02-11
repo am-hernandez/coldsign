@@ -137,15 +137,37 @@ This section describes how to build coldsign on an **online build machine** and 
 
 ## Installation
 
+coldsign is intended to run on an air-gapped (offline) machine.
+
+At this stage, binaries are built from source on an online machine and then transferred.
+
 ### Build (online machine)
 
 ```sh
 git clone https://github.com/am-hernandez/coldsign.git
 cd coldsign
-go build -o coldsign
+git checkout v1.0.0 # or desired tag
+go build -ldflags "-X main.Version=$(git describe --tags --abbrev=0)" -o coldsign
+```
+
+Verify the build:
+
+```sh
+./coldsign version
 ```
 
 Transfer the resulting `coldsign` binary to the offline machine using removable media.
+
+### Run (offline machine)
+
+```sh
+chmod +x ./coldsign
+mkdir -p ~/.local/bin
+mv coldsign ~/.local/bin/
+coldsign version
+```
+
+The offline machine does not require Go or any additional packages.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
