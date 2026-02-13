@@ -139,7 +139,7 @@ This section describes how to build coldsign on an **online build machine** and 
 
 coldsign is intended to run on an air-gapped (offline) machine.
 
-At this stage, binaries are built from source on an online machine and then transferred.
+Binaries are built on a separate online machine and transferred to the offline signing machine via removable media.
 
 ### Build (online machine)
 
@@ -147,7 +147,7 @@ At this stage, binaries are built from source on an online machine and then tran
 git clone https://github.com/am-hernandez/coldsign.git
 cd coldsign
 git checkout v1.0.0 # or desired tag
-go build -ldflags "-X main.Version=$(git describe --tags --abbrev=0)" -o coldsign
+go build -ldflags "-X main.Version=$(git describe --tags --abbrev=0)" -o dist/coldsign ./cmd/coldsign
 ```
 
 Verify the build:

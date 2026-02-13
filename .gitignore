@@ -10,3 +10,6 @@
 
 # OS junk
 .DS_Store
+
+# Distribution files
+dist/
